@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>לימוד סינית - משחק כרטיסיות פנדה</title>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- ספריית Pinyin להמרת אותיות סיניות לתעתיק מבוסס טונים -->
+    <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.19.6/dist/index.js"></script>
     <style>
         :root {
             --bg-color: #e8f5e9;
@@ -37,7 +39,6 @@
             min-height: 100vh;
         }
 
-        /* Top Header & Floating List Button */
         .top-bar {
             width: 100%;
             max-width: 450px;
@@ -124,7 +125,6 @@
             box-shadow: 0 1px 0px #1e90ff;
         }
 
-        /* Flashcard Container Mobile Friendly */
         .game-container {
             perspective: 1000px;
             width: 100%;
@@ -247,7 +247,6 @@
             margin-bottom: 20px;
         }
 
-        /* Form styling */
         .add-form {
             background: white;
             padding: 18px;
@@ -271,7 +270,7 @@
 
         .input-group input {
             width: 100%;
-            padding: 10px 12px;
+            padding: 12px;
             border: 2px solid #dfe4ea;
             border-radius: 12px;
             font-family: inherit;
@@ -290,7 +289,6 @@
             margin-top: 8px;
         }
 
-        /* Modal / List Overlay */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -436,21 +434,14 @@
     </div>
 
     <div class="add-form">
-        <h3>➕ הוספת משפט חדש למאגר</h3>
+        <h3>✨ הוספת משפט בלחיצה אחת</h3>
         <div class="input-group">
-            <input type="text" id="new-he" placeholder="משפט בעברית">
+            <input type="text" id="new-he" placeholder="כתובי משפט בעברית (למשל: איפה המלון?)">
         </div>
-        <div class="input-group">
-            <input type="text" id="new-zh" placeholder="סינית (למשל: 你好)">
-        </div>
-        <div class="input-group">
-            <input type="text" id="new-pinyin" placeholder="תעתיק באותיות לטיניות (Pinyin)">
-        </div>
-        <button class="btn" style="width: 100%; background-color: var(--primary); box-shadow: 0 4px 0px var(--primary-dark); margin-top: 5px;" onclick="addPhrase()">הוסף למאגר!</button>
-        <div class="hint">* המשפטים נשמרים בזיכרון המכשיר שלך.</div>
+        <button class="btn" id="add-btn" style="width: 100%; background-color: var(--primary); box-shadow: 0 4px 0px var(--primary-dark); margin-top: 5px;" onclick="addPhraseAuto()">🪄 תרגם והוסף למאגר!</button>
+        <div class="hint">* התרגום לסינית, ה-Pinyin וההקראה ייווצרו אוטומטית.</div>
     </div>
 
-    <!-- Modal List -->
     <div class="modal-overlay" id="listModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -458,33 +449,31 @@
                 <button class="close-btn" onclick="toggleModal(false)">&times;</button>
             </div>
             <div class="modal-body" id="phrasesListContainer">
-                <!-- Items populated dynamically -->
             </div>
         </div>
     </div>
 
     <script>
-        // Updated standard phrased translations to common Chinese Mandarin usage
         const defaultPhrases = [
             { he: "שלום", zh: "你好", pinyin: "Nǐ hǎo" },
             { he: "תודה", zh: "謝謝", pinyin: "Xièxie" },
             { he: "בבקשה (אין בעד מה)", zh: "不客氣", pinyin: "Bú kèqì" },
             { he: "מה שמך?", zh: "你叫什麼名字？", pinyin: "Nǐ jiào shénme míngzi?" },
-            { he: "השם שלי הוא ", zh: "我的名字是 ", pinyin: "Wǒ de míngzi shì " },
+            { he: "השם שלי הוא...", zh: "我的名字是", pinyin: "Wǒ de míngzi shì" },
             { he: "שירותים", zh: "洗手間", pinyin: "Xǐshǒujiān" },
             { he: "איפה הקופה?", zh: "結帳台在哪裡？", pinyin: "Jiézhàngtái zài nǎlǐ?" },
-            { he: "איפה הרכבת ל ?", zh: "去 _ 的火車在哪裡？", pinyin: "Qù _ de huǒchē zài nǎlǐ?" },
+            { he: "איפה הרכבת ל...", zh: "去...的火車在哪裡？", pinyin: "Qù... de huǒchē zài nǎlǐ?" },
             { he: "אפשר לצלם כאן?", zh: "這裡可以拍照嗎？", pinyin: "Zhèlǐ kěyǐ pāizhào ma?" },
             { he: "מלון", zh: "飯店 / 酒店", pinyin: "Fàndiàn / Jiǔdiàn" },
             { he: "יש לנו הזמנה דרך Booking", zh: "我們有在 Booking 預訂", pinyin: "Wǒmen yǒu zài Booking yùdìng" },
             { he: "דרכון", zh: "護照", pinyin: "Hùzhào" },
-            { he: "סליחה, איך מגיעים ל?", zh: "請問，怎麼去 _？", pinyin: "Qǐngwèn, zěnme qù _?" },
-            { he: "סליחה, איפה ה?", zh: "請問，_ 在哪裡？", pinyin: "Qǐngwèn, _ zài nǎlǐ?" },
-            { he: "קח אותי ל_", zh: "請帶我去 _", pinyin: "Qǐng dài wǒ qù _" },
+            { he: "סליחה, איך מגיעים ל...?", zh: "請問，怎麼去？", pinyin: "Qǐngwèn, zěnme qù?" },
+            { he: "סליחה, איפה ה...?", zh: "請問，在哪裡？", pinyin: "Qǐngwèn, zài nǎlǐ?" },
+            { he: "קח אותי ל...", zh: "請帶我去", pinyin: "Qǐng dài wǒ qù" },
             { he: "כמה זה עולה?", zh: "這個多少錢？", pinyin: "Zhège duōshao qián?" },
             { he: "אני רוצה לקנות את זה", zh: "我想買這個", pinyin: "Wǒ xiǎng mǎi zhège" },
             { he: "לא, תודה", zh: "不用了，謝謝", pinyin: "Búyòng le, xièxie" },
-            { he: "אני רוצה להזמין _", zh: "我想點 _", pinyin: "Wǒ xiǎng diǎn _" },
+            { he: "אני רוצה להזמין...", zh: "我想點", pinyin: "Wǒ xiǎng diǎn" },
             { he: "אני צמחוני/טבעוני (בלי בשר)", zh: "我吃素，有什麼可吃的？", pinyin: "Wǒ chīsù, yǒu shénme kě chī de?" },
             { he: "בלי בשר, חזיר, עוף, דג ופירות ים", zh: "不要肉、豬肉、雞肉、魚和海鮮", pinyin: "Búyào ròu, zhūròu, jīròu, yú hé hǎixiān" },
             { he: "בלי בצל", zh: "不要洋蔥", pinyin: "Búyào yángcōng" },
@@ -497,6 +486,30 @@
         let currentIndex = 0;
         let currentMode = 'he-to-zh';
         let isFlipped = false;
+        let cachedVoices = [];
+
+        let audioUnlocked = false;
+        function unlockAudio() {
+            if (!audioUnlocked && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const dummy = new SpeechSynthesisUtterance(' ');
+                dummy.volume = 0.01;
+                window.speechSynthesis.speak(dummy);
+                audioUnlocked = true;
+            }
+        }
+        document.addEventListener('touchstart', unlockAudio, { once: true });
+        document.addEventListener('click', unlockAudio, { once: true });
+
+        function loadVoices() {
+            if ('speechSynthesis' in window) {
+                cachedVoices = window.speechSynthesis.getVoices();
+            }
+        }
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
 
         function updateCard() {
             const card = document.getElementById('card');
@@ -559,13 +572,34 @@
         }
 
         function speakText(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // Stop active speech
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'zh-CN'; // Default Chinese voice
-                utterance.rate = 0.85; // Slightly slower for clarity
-                window.speechSynthesis.speak(utterance);
+            if (!('speechSynthesis' in window)) {
+                alert('הדפדפן במכשיר אינו תומך בהקראה קולית.');
+                return;
             }
+
+            unlockAudio();
+            window.speechSynthesis.cancel();
+
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+            }
+
+            const cleanText = text.replace(/[_.\-\?？]/g, ' ').trim();
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.rate = 0.8;
+
+            const voices = cachedVoices.length ? cachedVoices : window.speechSynthesis.getVoices();
+            const zhVoice = voices.find(v => v.lang.startsWith('zh') || v.lang.startsWith('cmn'));
+            
+            if (zhVoice) {
+                utterance.voice = zhVoice;
+            } else {
+                utterance.lang = 'zh-CN';
+            }
+
+            setTimeout(() => {
+                window.speechSynthesis.speak(utterance);
+            }, 50);
         }
 
         function speakCurrent(e) {
@@ -574,30 +608,55 @@
             speakText(item.zh);
         }
 
-        function addPhrase() {
-            const he = document.getElementById('new-he').value.trim();
-            const zh = document.getElementById('new-zh').value.trim();
-            const pinyin = document.getElementById('new-pinyin').value.trim();
+        /* Auto Translate Hebrew -> Chinese -> Pinyin */
+        async function addPhraseAuto() {
+            const heInput = document.getElementById('new-he');
+            const he = heInput.value.trim();
 
-            if (!he || !zh || !pinyin) {
-                alert('אנא המלאי את כל השדות!');
+            if (!he) {
+                alert('אנא כתובי משפט בעברית!');
                 return;
             }
 
-            phrases.push({ he, zh, pinyin });
-            localStorage.setItem('custom_chinese_phrases', JSON.stringify(phrases));
+            const addBtn = document.getElementById('add-btn');
+            const originalText = addBtn.innerText;
+            addBtn.innerText = '✨ מתרגם לסינית...';
+            addBtn.disabled = true;
 
-            document.getElementById('new-he').value = '';
-            document.getElementById('new-zh').value = '';
-            document.getElementById('new-pinyin').value = '';
+            try {
+                // 1. תרגום אוטומטי מול API חופשי
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=he&tl=zh-CN&dt=t&q=${encodeURIComponent(he)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                const zh = data[0].map(item => item[0]).join('');
 
-            alert('המשפט נשמר בהצלחה!');
-            currentIndex = phrases.length - 1;
-            updateCard();
-            renderPhrasesList();
+                // 2. המרה אוטומטית ל-Pinyin בעזרת ספריית pinyin-pro
+                let pinyin = "";
+                if (typeof pinyinPro !== 'undefined') {
+                    pinyin = pinyinPro.pinyin(zh, { toneType: 'symbol' });
+                } else {
+                    pinyin = zh;
+                }
+
+                // 3. שמירה במאגר
+                phrases.push({ he, zh, pinyin });
+                localStorage.setItem('custom_chinese_phrases', JSON.stringify(phrases));
+
+                heInput.value = '';
+                alert(`המשפט נוסף בהצלחה!\n\n🇨🇳 סינית: ${zh}\n🗣️ פוניטיקה: ${pinyin}`);
+
+                currentIndex = phrases.length - 1;
+                updateCard();
+                renderPhrasesList();
+            } catch (error) {
+                alert('אירעה שגיאה בתרגום האוטומטי. ודאי שיש חיבור פעיל לאינטרנט.');
+                console.error(error);
+            } finally {
+                addBtn.innerText = originalText;
+                addBtn.disabled = false;
+            }
         }
 
-        /* Modal Phrase List Functions */
         function toggleModal(show) {
             const modal = document.getElementById('listModal');
             if (show) {
