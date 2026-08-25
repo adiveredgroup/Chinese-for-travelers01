@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>לימוד סינית - משחק כרטיסיות פנדה</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #e8f5e9;
+            --primary: #ff6b81;
+            --primary-dark: #ee5253;
+            --secondary: #2ed573;
+            --secondary-dark: #26af5f;
+            --accent: #ffa502;
+            --card-bg: #ffffff;
+            --text-color: #2f3542;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#a8e6cf 1.5px, transparent 1.5px), radial-gradient(#a8e6cf 1.5px, #e8f5e9 1.5px);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Top Header & Floating List Button */
+        .top-bar {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .list-btn-top {
+            background-color: #ffffff;
+            color: var(--text-color);
+            border: 2px solid #2ed573;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            color: #2d3436;
+            font-size: 1.8rem;
+            margin: 5px 0;
+            text-shadow: 1px 1px 0px #ffffff;
+        }
+
+        .header p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #57606f;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 400px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 0px var(--secondary-dark);
+            transition: transform 0.1s;
+            flex: 1;
+            text-align: center;
+            min-width: 90px;
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0px var(--secondary-dark);
+        }
+
+        .btn.active {
+            background-color: var(--primary);
+            box-shadow: 0 4px 0px var(--primary-dark);
+        }
+
+        .btn-rand {
+            background-color: #70a1ff;
+            box-shadow: 0 4px 0px #1e90ff;
+        }
+        .btn-rand:active {
+            box-shadow: 0 1px 0px #1e90ff;
+        }
+
+        /* Flashcard Container Mobile Friendly */
+        .game-container {
+            perspective: 1000px;
+            width: 100%;
+            max-width: 400px;
+            height: 270px;
+            margin-bottom: 15px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 24px;
+            background: var(--card-bg);
+            border: 4px solid #a8e6cf;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .card-front::after {
+            content: "🐼";
+            position: absolute;
+            bottom: 10px;
+            left: 15px;
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .card-back {
+            background: #fffdf9;
+            transform: rotateY(180deg);
+            border-color: #ffd32a;
+        }
+
+        .card-back::after {
+            content: "🎋";
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            color: #a4b0be;
+            position: absolute;
+            top: 12px;
+            font-weight: 600;
+        }
+
+        .text-main {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-color);
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+
+        .chinese-trad {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+            word-break: break-word;
+        }
+
+        .pinyin {
+            font-size: 1.15rem;
+            color: #57606f;
+            margin-top: 4px;
+            direction: ltr;
+            font-weight: 600;
+        }
+
+        .audio-btn {
+            background: var(--accent);
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 3px 0px #e1b12c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .audio-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
+        }
+
+        /* Form styling */
+        .add-form {
+            background: white;
+            padding: 18px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 400px;
+            border: 2px dashed #2ed573;
+        }
+
+        .add-form h3 {
+            margin: 0 0 12px 0;
+            color: var(--secondary-dark);
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .input-group {
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #dfe4ea;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: var(--secondary);
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: #a4b0be;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* Modal / List Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 450px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 15px;
+            background: var(--secondary);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 10px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .phrase-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #f1f2f6;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+
+        .phrase-item:hover {
+            background-color: #f7f9fa;
+        }
+
+        .phrase-text {
+            display: flex;
+            flex-direction: column;
+            text-align: right;
+        }
+
+        .phrase-hebrew {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .phrase-chinese {
+            font-size: 0.85rem;
+            color: #747d8c;
+            direction: ltr;
+            text-align: right;
+        }
+
+        .listen-icon {
+            background: #eccc68;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <span>🐼 משחק פנדה</span>
+        <button class="list-btn-top" onclick="toggleModal(true)">📜 רשימת המושגים</button>
+    </div>
+
+    <div class="header">
+        <h1>🐼 לומדים סינית בכיף! 🥟</h1>
+        <p>לחצי על הכרטיסייה כדי להפוך אותה</p>
+    </div>
+
+    <div class="controls">
+        <button class="btn active" id="btn-he-zh" onclick="setMode('he-to-zh', event)">עברית ⬅️ סינית</button>
+        <button class="btn" id="btn-zh-he" onclick="setMode('zh-to-he', event)">סינית ⬅️ עברית</button>
+        <button class="btn btn-rand" onclick="randomCard()">🎲 אקראי</button>
+    </div>
+
+    <div class="game-container">
+        <div class="card" id="card" onclick="flipCard()">
+            <div class="card-face card-front">
+                <span class="card-title" id="front-title">שאלה</span>
+                <div class="text-main" id="front-text">טוען...</div>
+                <div class="pinyin" id="front-sub"></div>
+            </div>
+            <div class="card-face card-back">
+                <span class="card-title" id="back-title">תשובה</span>
+                <div class="chinese-trad" id="back-main"></div>
+                <div class="pinyin" id="back-pinyin"></div>
+                <div class="text-main" id="back-hebrew" style="font-size: 1.1rem; margin-top: 5px;"></div>
+                <button class="audio-btn" onclick="speakCurrent(event)">🔊</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-buttons">
+        <button class="btn" onclick="prevCard()">קודם ➡️</button>
+        <button class="btn" onclick="nextCard()">הבא ⬅️</button>
+    </div>
+
+    <div class="add-form">
+        <h3>➕ הוספת משפט חדש למאגר</h3>
+        <div class="input-group">
+            <input type="text" id="new-he" placeholder="משפט בעברית">
+        </div>
+        <div class="input-group">
+            <input type="text" id="new-zh" placeholder="סינית (למשל: 你好)">
+        </div>
+        <div class="input-group">
+            <input type="text" id="new-pinyin" placeholder="תעתיק באותיות לטיניות (Pinyin)">
+        </div>
+        <button class="btn" style="width: 100%; background-color: var(--primary); box-shadow: 0 4px 0px var(--primary-dark); margin-top: 5px;" onclick="addPhrase()">הוסף למאגר!</button>
+        <div class="hint">* המשפטים נשמרים בזיכרון המכשיר שלך.</div>
+    </div>
+
+    <!-- Modal List -->
+    <div class="modal-overlay" id="listModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📜 רשימת המושגים והמשפטים</h2>
+                <button class="close-btn" onclick="toggleModal(false)">&times;</button>
+            </div>
+            <div class="modal-body" id="phrasesListContainer">
+                <!-- Items populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Updated standard phrased translations to common Chinese Mandarin usage
+        const defaultPhrases = [
+            { he: "שלום", zh: "你好", pinyin: "Nǐ hǎo" },
+            { he: "תודה", zh: "謝謝", pinyin: "Xièxie" },
+            { he: "בבקשה (אין בעד מה)", zh: "不客氣", pinyin: "Bú kèqì" },
+            { he: "מה שמך?", zh: "你叫什麼名字？", pinyin: "Nǐ jiào shénme míngzi?" },
+            { he: "השם שלי הוא ___", zh: "我的名字是 ___", pinyin: "Wǒ de míngzi shì ___" },
+            { he: "שירותים", zh: "洗手間", pinyin: "Xǐshǒujiān" },
+            { he: "איפה הקופה?", zh: "結帳台在哪裡？", pinyin: "Jiézhàngtái zài nǎlǐ?" },
+            { he: "איפה הרכבת ל___?", zh: "去 ___ 的火車在哪裡？", pinyin: "Qù ___ de huǒchē zài nǎlǐ?" },
+            { he: "אפשר לצלם כאן?", zh: "這裡可以拍照嗎？", pinyin: "Zhèlǐ kěyǐ pāizhào ma?" },
+            { he: "מלון", zh: "飯店 / 酒店", pinyin: "Fàndiàn / Jiǔdiàn" },
+            { he: "יש לנו הזמנה דרך Booking", zh: "我們有在 Booking 預訂", pinyin: "Wǒmen yǒu zài Booking yùdìng" },
+            { he: "דרכון", zh: "護照", pinyin: "Hùzhào" },
+            { he: "סליחה, איך מגיעים ל___?", zh: "請問，怎麼去 ___？", pinyin: "Qǐngwèn, zěnme qù ___?" },
+            { he: "סליחה, איפה ה___?", zh: "請問，___ 在哪裡？", pinyin: "Qǐngwèn, ___ zài nǎlǐ?" },
+            { he: "קח אותי ל___", zh: "請帶我去 ___", pinyin: "Qǐng dài wǒ qù ___" },
+            { he: "כמה זה עולה?", zh: "這個多少錢？", pinyin: "Zhège duōshao qián?" },
+            { he: "אני רוצה לקנות את זה", zh: "我想買這個", pinyin: "Wǒ xiǎng mǎi zhège" },
+            { he: "לא, תודה", zh: "不用了，謝謝", pinyin: "Búyòng le, xièxie" },
+            { he: "אני רוצה להזמין ___", zh: "我想點 ___", pinyin: "Wǒ xiǎng diǎn ___" },
+            { he: "אני צמחוני/טבעוני (בלי בשר)", zh: "我吃素，有什麼可吃的？", pinyin: "Wǒ chīsù, yǒu shénme kě chī de?" },
+            { he: "בלי בשר, חזיר, עוף, דג ופירות ים", zh: "不要肉、豬肉、雞肉、魚和海鮮", pinyin: "Búyào ròu, zhūròu, jīròu, yú hé hǎixiān" },
+            { he: "בלי בצל", zh: "不要洋蔥", pinyin: "Búyào yángcōng" },
+            { he: "בלי שום", zh: "不要大蒜", pinyin: "Búyào dàsuàn" },
+            { he: "לא חריף", zh: "不要辣", pinyin: "Búyào là" },
+            { he: "זה יקר מדי, אפשר הנחה?", zh: "太貴了，可以便宜一點嗎？", pinyin: "Tài guì le, kěyǐ piányí yìdiǎn ma?" }
+        ];
+
+        let phrases = JSON.parse(localStorage.getItem('custom_chinese_phrases')) || defaultPhrases;
+        let currentIndex = 0;
+        let currentMode = 'he-to-zh';
+        let isFlipped = false;
+
+        function updateCard() {
+            const card = document.getElementById('card');
+            card.classList.remove('flipped');
+            isFlipped = false;
+
+            const item = phrases[currentIndex];
+
+            if (currentMode === 'he-to-zh') {
+                document.getElementById('front-title').innerText = "עברית (לחצי להפיכה)";
+                document.getElementById('front-text').innerText = item.he;
+                document.getElementById('front-sub').innerText = "";
+
+                document.getElementById('back-title').innerText = "סינית";
+                document.getElementById('back-main').innerText = item.zh;
+                document.getElementById('back-pinyin').innerText = item.pinyin;
+                document.getElementById('back-hebrew').innerText = item.he;
+            } else {
+                document.getElementById('front-title').innerText = "סינית (לחצי להפיכה)";
+                document.getElementById('front-text').innerText = item.zh;
+                document.getElementById('front-sub').innerText = item.pinyin;
+
+                document.getElementById('back-title').innerText = "תרגום לעברית";
+                document.getElementById('back-main').innerText = item.he;
+                document.getElementById('back-pinyin').innerText = item.pinyin;
+                document.getElementById('back-hebrew').innerText = item.zh;
+            }
+        }
+
+        function flipCard() {
+            const card = document.getElementById('card');
+            card.classList.toggle('flipped');
+            isFlipped = !isFlipped;
+        }
+
+        function nextCard() {
+            currentIndex = (currentIndex + 1) % phrases.length;
+            updateCard();
+        }
+
+        function prevCard() {
+            currentIndex = (currentIndex - 1 + phrases.length) % phrases.length;
+            updateCard();
+        }
+
+        function randomCard() {
+            const randomIndex = Math.floor(Math.random() * phrases.length);
+            currentIndex = randomIndex;
+            updateCard();
+        }
+
+        function setMode(mode, e) {
+            currentMode = mode;
+            document.getElementById('btn-he-zh').classList.remove('active');
+            document.getElementById('btn-zh-he').classList.remove('active');
+            if (e && e.target) {
+                e.target.classList.add('active');
+            }
+            updateCard();
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop active speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN'; // Default Chinese voice
+                utterance.rate = 0.85; // Slightly slower for clarity
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function speakCurrent(e) {
+            if (e) e.stopPropagation();
+            const item = phrases[currentIndex];
+            speakText(item.zh);
+        }
+
+        function addPhrase() {
+            const he = document.getElementById('new-he').value.trim();
+            const zh = document.getElementById('new-zh').value.trim();
+            const pinyin = document.getElementById('new-pinyin').value.trim();
+
+            if (!he || !zh || !pinyin) {
+                alert('אנא המלאי את כל השדות!');
+                return;
+            }
+
+            phrases.push({ he, zh, pinyin });
+            localStorage.setItem('custom_chinese_phrases', JSON.stringify(phrases));
+
+            document.getElementById('new-he').value = '';
+            document.getElementById('new-zh').value = '';
+            document.getElementById('new-pinyin').value = '';
+
+            alert('המשפט נשמר בהצלחה!');
+            currentIndex = phrases.length - 1;
+            updateCard();
+            renderPhrasesList();
+        }
+
+        /* Modal Phrase List Functions */
+        function toggleModal(show) {
+            const modal = document.getElementById('listModal');
+            if (show) {
+                renderPhrasesList();
+                modal.classList.add('active');
+            } else {
+                modal.classList.remove('active');
+            }
+        }
+
+        function renderPhrasesList() {
+            const container = document.getElementById('phrasesListContainer');
+            container.innerHTML = '';
+
+            phrases.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'phrase-item';
+                row.onclick = () => {
+                    currentIndex = idx;
+                    updateCard();
+                    toggleModal(false);
+                };
+
+                row.innerHTML = `
+                    <div class="phrase-text">
+                        <span class="phrase-hebrew">${item.he}</span>
+                        <span class="phrase-chinese">${item.zh} (${item.pinyin})</span>
+                    </div>
+                    <button class="listen-icon" onclick="event.stopPropagation(); speakText('${item.zh.replace(/'/g, "\\'")}')">🔊</button>
+                `;
+
+                container.appendChild(row);
+            });
+        }
+
+        updateCard();
+    </script>
+</body>
+</html>
