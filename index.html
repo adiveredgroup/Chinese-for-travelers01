@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>לימוד סינית - משחק כרטיסיות פנדה</title>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
-    <!-- ספריית Pinyin להמרת אותיות סיניות לתעתיק מבוסס טונים -->
+    <!-- ספריית Pinyin להמרת אותיות סיניות לתעתיק פונטי -->
     <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.19.6/dist/index.js"></script>
     <style>
         :root {
@@ -436,7 +436,7 @@
     <div class="add-form">
         <h3>✨ הוספת משפט בלחיצה אחת</h3>
         <div class="input-group">
-            <input type="text" id="new-he" placeholder="מה תרצה לתרגם? (למשל: איפה המלון?)">
+            <input type="text" id="new-he" placeholder="כתובי משפט בעברית (למשל: איפה המלון?)">
         </div>
         <button class="btn" id="add-btn" style="width: 100%; background-color: var(--primary); box-shadow: 0 4px 0px var(--primary-dark); margin-top: 5px;" onclick="addPhraseAuto()">🪄 תרגם והוסף למאגר!</button>
         <div class="hint">* התרגום לסינית, ה-Pinyin וההקראה ייווצרו אוטומטית.</div>
@@ -608,7 +608,7 @@
             speakText(item.zh);
         }
 
-        /* Auto Translate Hebrew -> Chinese -> Pinyin */
+        /* iOS & Mobile Compatible Auto Translate */
         async function addPhraseAuto() {
             const heInput = document.getElementById('new-he');
             const he = heInput.value.trim();
@@ -624,21 +624,43 @@
             addBtn.disabled = true;
 
             try {
-                // 1. תרגום אוטומטי מול API חופשי
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=he&tl=zh-CN&dt=t&q=${encodeURIComponent(he)}`;
-                const response = await fetch(url);
-                const data = await response.json();
-                const zh = data[0].map(item => item[0]).join('');
+                let zh = '';
 
-                // 2. המרה אוטומטית ל-Pinyin בעזרת ספריית pinyin-pro
+                // ניסיון 1: MyMemory Translation API - תומך CORS באופן מורשה ומלא במכשירי iOS
+                try {
+                    const myMemoryUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(he)}&langpair=he|zh-CN`;
+                    const res = await fetch(myMemoryUrl);
+                    const data = await res.json();
+                    if (data && data.responseData && data.responseData.translatedText) {
+                        zh = data.responseData.translatedText;
+                    }
+                } catch (e) {
+                    console.warn('MyMemory fetch failed, trying fallback...', e);
+                }
+
+                // ניסיון 2: מנגנון גיבוי במידה וניסיון 1 נכשל
+                if (!zh) {
+                    const googleUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=he&tl=zh-CN&dt=t&q=${encodeURIComponent(he)}`;
+                    const res = await fetch(googleUrl);
+                    const data = await res.json();
+                    if (data && data[0]) {
+                        zh = data[0].map(item => item[0]).join('');
+                    }
+                }
+
+                if (!zh) {
+                    throw new Error('לא ניתן להשיק תרגום משרת מרוחק');
+                }
+
+                // המרה ל-Pinyin
                 let pinyin = "";
-                if (typeof pinyinPro !== 'undefined') {
-                    pinyin = pinyinPro.pinyin(zh, { toneType: 'symbol' });
+                if (window.pinyinPro && typeof window.pinyinPro.pinyin === 'function') {
+                    pinyin = window.pinyinPro.pinyin(zh, { toneType: 'symbol' });
                 } else {
                     pinyin = zh;
                 }
 
-                // 3. שמירה במאגר
+                // שמירה במאגר
                 phrases.push({ he, zh, pinyin });
                 localStorage.setItem('custom_chinese_phrases', JSON.stringify(phrases));
 
@@ -649,7 +671,7 @@
                 updateCard();
                 renderPhrasesList();
             } catch (error) {
-                alert('אירעה שגיאה בתרגום האוטומטי. ודאי שיש חיבור פעיל לאינטרנט.');
+                alert('אירעה שגיאה בתרגום האוטומטי. אנא נסי שוב.');
                 console.error(error);
             } finally {
                 addBtn.innerText = originalText;
